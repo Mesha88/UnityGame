@@ -98,6 +98,12 @@ public class PlayerController : MonoBehaviour
         attackTimer -= Time.deltaTime;
 
         HandleInput();
+
+        if (attackMoveTargetting)
+        {
+            AttackMoveTargettingFunction();
+        }
+
         UpdateState();
         HandleAbilities(); // Always check for ability inputs
         UpdateAnimator();  // Update animation based on movement
@@ -125,7 +131,7 @@ public class PlayerController : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.A))
         {
-            AttackMoveTargettingFunction();
+            attackMoveTargetting = true;
         }
     }
 
