@@ -110,6 +110,7 @@ public class EnemyScript : MonoBehaviour
     {
         OnEnemyDeath?.Invoke();
         Debug.Log("Enemy has died!");
+        GiveResources();
         Destroy(gameObject, 0.1f); 
     }
 
@@ -122,5 +123,11 @@ public class EnemyScript : MonoBehaviour
     public void UnTargetedByPlayer()
     {
         targetIndicator.SetActive(false);
+    }
+
+    void GiveResources()
+    {
+        playerController.crystals += 5;
+        playerController.vespene += 1;
     }
 }

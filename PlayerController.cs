@@ -50,6 +50,7 @@ public class PlayerController : MonoBehaviour
     private Vector3 originalPosition; // The position the player is supposed to return to after chasing target he auto attacked while idle
     private Vector3 attackMoveDestination;
 
+    [SerializeField] 
 
     //State Machine
     private enum State { Idle, Moving, Attacking, AttackMove, AttackMoveTargeting }
