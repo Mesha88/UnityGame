@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using System;
+using System.Reflection;
 
 public class DisplayResource : MonoBehaviour
 {
@@ -13,18 +14,33 @@ public class DisplayResource : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        playerController = GetComponent <PlayerController>();
+        playerController = player.GetComponent<PlayerController>();
     }
 
     // Update is called once per frame
     void Update()
     {
-        text.text = playerController.crystals.ToString();
+        ShowResource(resourceName);
     }
 
-    void ShowResource()
+    public void ShowResource(String resourceName)
     {
-        text.text = $"{resourceName}: {playerController.crystals}";
+
+       
+            // Trim any extra spaces or characters
+            string cleanResourceName = resourceName.Trim(':', ' ');
+
+            // Check if the key exists before accessing it
+            if (playerController.resources.ContainsKey(cleanResourceName))
+            {
+                int resourceValue = playerController.resources[cleanResourceName];
+                text.text = $"{cleanResourceName}: {resourceValue}";
+            }
+            else
+            {
+                Debug.LogError($"Resource '{cleanResourceName}' not found in the dictionary.");
+            
+        }
     }
 
 }

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.UI;
 
 public class PlayerController : MonoBehaviour
 {
@@ -22,11 +23,15 @@ public class PlayerController : MonoBehaviour
     public float damage;
     public float healingRate;
     public float armor;
-    public int crystals = 0;
-    public int vespene = 0;
     float currentExperience;
     float neededExperience;
     int level = 1;
+
+    public Dictionary<string, int> resources = new Dictionary<string, int>(){
+    {"Crystals", 0},
+    {"Vespene", 0},
+    {"Experience", 0}
+};
 
     public float rotationSpeed = 5;
     [SerializeField] private GameObject healthBar;
@@ -38,7 +43,6 @@ public class PlayerController : MonoBehaviour
     public LayerMask enemyLayer; //All units on this layer are enemies
     
 
-
     //Ability related
     public Ability[] abilities = new Ability[4]; //Ability class files can be dragged in inside unity
 
@@ -49,11 +53,17 @@ public class PlayerController : MonoBehaviour
     private float attackTimer = 0;
     private Vector3 originalPosition; // The position the player is supposed to return to after chasing target he auto attacked while idle
     private Vector3 attackMoveDestination;
+    [SerializeField] Text crystalCounter;
+    DisplayResource crystalCounterDisplay;
+    [SerializeField] Text vespeneCounter;
+    DisplayResource vespeneCounterDisplay;
+    bool attackMoveTargetting = false;
+    bool isAttackMoving = false;
 
     [SerializeField] 
 
     //State Machine
-    private enum State { Idle, Moving, Attacking, AttackMove, AttackMoveTargeting }
+    private enum State { Idle, Moving, Attacking, AttackMove }
     private State currentState = State.Idle;
 
     //------------------------------------------------------------//
@@ -73,7 +83,10 @@ public class PlayerController : MonoBehaviour
         originalPosition = transform.position;
         //agent.updateRotation = false;
         healthBarScript = healthBar.GetComponent<PlayerHealthBarScript>();
-
+        crystalCounterDisplay = crystalCounter.GetComponent<DisplayResource>();
+        crystalCounterDisplay.resourceName = "Crystals";
+        vespeneCounterDisplay = vespeneCounter.GetComponent<DisplayResource>();
+        vespeneCounterDisplay.resourceName = "Vespene";
         
 
     }
@@ -82,9 +95,42 @@ public class PlayerController : MonoBehaviour
     void Update()
     {
 
-       
-
         attackTimer -= Time.deltaTime;
+
+        HandleInput();
+        UpdateState();
+        HandleAbilities(); // Always check for ability inputs
+        UpdateAnimator();  // Update animation based on movement
+
+    }
+
+    //------------------------------------------------------------//
+
+    /// FUNCTION DECLARATIONS
+    /// FUNCTION DECLARATIONS
+    /// FUNCTION DECLARATIONS
+
+
+    void HandleInput()
+    {
+        if (Input.GetMouseButtonDown(1))
+        {
+            HandleRightClick();
+        }
+
+        if (Input.GetKeyDown(KeyCode.S))
+        {
+            StopAllActions();
+        }
+
+        if (Input.GetKeyDown(KeyCode.A))
+        {
+            AttackMoveTargettingFunction();
+        }
+    }
+
+    void HandleRightClick()
+    {
         if (Input.GetMouseButtonDown(1))
         {
             //Right click to check what is clicked
@@ -100,7 +146,10 @@ public class PlayerController : MonoBehaviour
 
                 }
         }
+    }
 
+    void UpdateState()
+    {
         switch (currentState)
         {
             case State.Idle:
@@ -112,27 +161,11 @@ public class PlayerController : MonoBehaviour
             case State.Attacking:
                 HandleAttacking();
                 break;
-            //case State.AttackMove:
-              //  HandleAttackMove();
-                //break;
+            case State.AttackMove:
+                HandleAttackMove();
+                break;
         }
-
-        HandleAbilities(); // Always check for ability inputs
-        UpdateAnimator();  // Update animation based on movement
-
-
-        //Attack Move enable button
-        //if (Input.GetKeyDown(KeyCode.A))
-        //{
-        //    currentState = State.AttackMoveTargeting;
-        //}
     }
-
-    //------------------------------------------------------------//
-
-    /// FUNCTION DECLARATIONS
-    /// FUNCTION DECLARATIONS
-    /// FUNCTION DECLARATIONS
 
     void HandleIdle()
     {
@@ -156,7 +189,7 @@ public class PlayerController : MonoBehaviour
     {
         if (currentTarget == null)
         {
-            Debug.Log("Current target is null, switching to Idle state");
+            //Debug.Log("Current target is null, switching to Idle state");
             SetState(State.Idle);
             return;
         }
@@ -169,7 +202,7 @@ public class PlayerController : MonoBehaviour
 
         if (IsTargetOutOfRange())
         {
-            Debug.Log("Target is out of range, switching to Idle state");
+            //Debug.Log("Target is out of range, switching to Idle state");
             SetState(State.Idle);
             return;
         }
@@ -178,7 +211,7 @@ public class PlayerController : MonoBehaviour
 
         if (attackTimer <= 0f)
         {
-            Debug.Log("Triggering attack animation");
+            //Debug.Log("Triggering attack animation");
             if (anim != null)
             {
                 anim.SetTrigger("Shoot");
@@ -192,41 +225,47 @@ public class PlayerController : MonoBehaviour
         }
 
         agent.isStopped = true;
-        
-       
-        
+
+        if (attackMoveDestination != null)
+        {
+            SetState(State.AttackMove);
+        }
     }
 
 
-    //void HandleAttackMoveTargetting()
-    //{
-
-
-    //    Ray attackMoveRay = Camera.Main.ScreenPointToRay(Input.mousePosition);
-    //    if(Physics.Raycast(attackMoveRay, out RaycastHit hit))
-    //    {
-    //        if (hit.transform.CompareTag("Enemy"))
-    //        {
-    //            currentTarget = hit.transform;
-    //            currentState = State.Attacking;
-    //        }
-    //        else
-    //        {
-    //            attackMoveDestination = hit.point.
-    //            currentState = State.AttackMove;
-    //        }
-    //    }
-    //}
-
-    //void HandleAttackMove()
-    //{
-
-    //}
+    void HandleAttackMove()
+    {
+        if (currentTarget != null)
+        {
+            if (IsTargetOutOfRange())
+            {
+                MoveToLocation(currentTarget.position);
+            }
+            else
+            {
+                SetState(State.Attacking);
+            }
+        }
+        else if (Vector3.Distance(transform.position, attackMoveDestination) <= agent.stoppingDistance)
+        {
+            SetState(State.Idle);
+            isAttackMoving = false;
+        }
+        else
+        {
+            FindNearestEnemy();
+            if (currentTarget == null)
+            {
+                MoveToLocation(attackMoveDestination);
+            }
+        }
+    }
 
 
     void MoveToLocation(Vector3 destination)
     {
         StopAttack();
+        attackMoveDestination = Vector3.positiveInfinity;
         agent.isStopped = false;
         agent.SetDestination(destination);
         RotateTowards(destination);
@@ -313,7 +352,7 @@ public class PlayerController : MonoBehaviour
         currentTarget = null;
        
         agent.isStopped = false;
-        Debug.Log("Attack stopped");
+        //Debug.Log("Attack stopped");
     }
 
 
@@ -374,7 +413,7 @@ public class PlayerController : MonoBehaviour
     {
         if (currentState != newState)
         {
-            Debug.Log($"Changing state from {currentState} to {newState}");
+            //Debug.Log($"Changing state from {currentState} to {newState}");
             currentState = newState;
 
             switch (newState)
@@ -390,8 +429,52 @@ public class PlayerController : MonoBehaviour
                 case State.Attacking:
 
                     break;
+
+                case State.AttackMove:
+
+                    break;
             }
 
         }
     }
+
+    public void AddResources(string resourceName, int amount)
+    {
+        if (resources.ContainsKey(resourceName))
+        {
+            resources[resourceName] += amount;
+            crystalCounterDisplay.ShowResource($"{resourceName}:"); 
+            vespeneCounterDisplay.ShowResource($"{resourceName}:"); 
+        }
+    }
+
+    void StopAllActions()
+    {
+        currentTarget = null;
+        currentState = State.Idle;
+    }
+
+    void AttackMoveTargettingFunction()
+    {
+        if (Input.GetMouseButtonDown(0) && attackMoveTargetting)
+        {
+            //Right click to check what is clicked
+            Ray ray = Camera.main.ScreenPointToRay(Input.mousePosition);
+            if (Physics.Raycast(ray, out RaycastHit hit))
+                if (hit.transform.CompareTag("Enemy"))
+                {
+                    SetTarget(hit.transform);
+                    attackMoveTargetting = false;
+                }
+                else
+                {
+                    Debug.Log("set current state to attack move");
+                    attackMoveDestination = hit.point;
+                    attackMoveTargetting = false;
+                    SetState(State.AttackMove);
+
+                }
+        }
+    }
+
 }

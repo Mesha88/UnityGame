@@ -93,7 +93,7 @@ public class EnemyScript : MonoBehaviour
     {
         health -= damage;
         health = Mathf.Max(health, 0); // Ensure health doesn't go below 0
-        Debug.Log($"Enemy took {damage} damage. Remaining health: {health}");
+        //Debug.Log($"Enemy took {damage} damage. Remaining health: {health}");
 
         // Update health bar
         healthBar.UpdateHealthBar(health, maxHealth);
@@ -109,7 +109,7 @@ public class EnemyScript : MonoBehaviour
     private void Die()
     {
         OnEnemyDeath?.Invoke();
-        Debug.Log("Enemy has died!");
+        //Debug.Log("Enemy has died!");
         GiveResources();
         Destroy(gameObject, 0.1f); 
     }
@@ -117,7 +117,7 @@ public class EnemyScript : MonoBehaviour
     public void TargetedByPlayer()
     {
         targetIndicator.SetActive(true);
-        Debug.Log("Targeted by player - Indicator activated");
+        
     }
 
     public void UnTargetedByPlayer()
@@ -127,7 +127,7 @@ public class EnemyScript : MonoBehaviour
 
     void GiveResources()
     {
-        playerController.crystals += 5;
-        playerController.vespene += 1;
+        playerController.resources["Crystals"] += 5;
+        playerController.resources["Vespene"] += 1;
     }
 }
