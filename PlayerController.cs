@@ -41,13 +41,13 @@ public class PlayerController : MonoBehaviour
 
     //Enemy related
     public LayerMask enemyLayer; //All units on this layer are enemies
-    
+
 
     //Ability related
     public Ability[] abilities = new Ability[4]; //Ability class files can be dragged in inside unity
 
     //Player Realted - needed for functionality
-    private UnityEngine.AI.NavMeshAgent agent;
+    public UnityEngine.AI.NavMeshAgent agent;
     private Animator anim;
     private Transform currentTarget; // Current enemy being attacked
     private float attackTimer = 0;
@@ -60,7 +60,7 @@ public class PlayerController : MonoBehaviour
     bool attackMoveTargetting = false;
     bool isAttackMoving = false;
 
-    [SerializeField] 
+    [SerializeField]
 
     //State Machine
     private enum State { Idle, Moving, Attacking, AttackMove }
@@ -87,7 +87,7 @@ public class PlayerController : MonoBehaviour
         crystalCounterDisplay.resourceName = "Crystals";
         vespeneCounterDisplay = vespeneCounter.GetComponent<DisplayResource>();
         vespeneCounterDisplay.resourceName = "Vespene";
-        
+
 
     }
 
@@ -175,10 +175,10 @@ public class PlayerController : MonoBehaviour
 
     void HandleIdle()
     {
-        
-            FindNearestEnemy();
-           
-        
+
+        FindNearestEnemy();
+
+
     }
 
 
@@ -187,7 +187,7 @@ public class PlayerController : MonoBehaviour
         if (!agent.pathPending && agent.remainingDistance <= agent.stoppingDistance)
         {
             SetState(State.Idle);
-           
+
         }
     }
 
@@ -222,20 +222,19 @@ public class PlayerController : MonoBehaviour
             {
                 anim.SetTrigger("Shoot");
             }
-            else
-            {
-                Debug.LogError("Animator is null");
-            }
-            StartCoroutine(AttackCoroutine());
 
+            StartCoroutine(AttackCoroutine());
         }
 
         agent.isStopped = true;
 
+        // Check if there’s an attack move destination
         if (attackMoveDestination != null)
         {
             SetState(State.AttackMove);
         }
+
+
     }
 
 
@@ -276,7 +275,7 @@ public class PlayerController : MonoBehaviour
         agent.SetDestination(destination);
         RotateTowards(destination);
         SetState(State.Moving);
-        
+
     }
 
     IEnumerator AttackCoroutine()
@@ -288,12 +287,14 @@ public class PlayerController : MonoBehaviour
             enemyScript.TakeDamage(damage);
             if (enemyScript.IsDead)
             {
+                currentTarget = null;
                 SetState(State.Idle);
             }
 
             yield return new WaitForSeconds(attackCooldown);
         }
 
+        
 
     }
 
@@ -356,7 +357,7 @@ public class PlayerController : MonoBehaviour
             }
         }
         currentTarget = null;
-       
+
         agent.isStopped = false;
         //Debug.Log("Attack stopped");
     }
@@ -385,7 +386,7 @@ public class PlayerController : MonoBehaviour
         float speed = agent.velocity.magnitude;
         anim.SetFloat("Speed", speed);
 
-        if(speed > 0.1f)
+        if (speed > 0.1f)
         {
             anim.SetBool("IsWalking", true);
         }
@@ -394,10 +395,10 @@ public class PlayerController : MonoBehaviour
         {
             anim.SetBool("IsWalking", false);
         }
-        
-        
+
+
     }
-    
+
     public void TakeDamage(float damage)
     {
         health -= damage;
@@ -419,17 +420,18 @@ public class PlayerController : MonoBehaviour
     {
         if (currentState != newState)
         {
-            //Debug.Log($"Changing state from {currentState} to {newState}");
+           Debug.Log($"Changing state from {currentState} to {newState}");
             currentState = newState;
 
             switch (newState)
             {
                 case State.Idle:
                     StopAttack();
+                   
                     break;
 
                 case State.Moving:
-
+                    
                     break;
 
                 case State.Attacking:
@@ -449,8 +451,8 @@ public class PlayerController : MonoBehaviour
         if (resources.ContainsKey(resourceName))
         {
             resources[resourceName] += amount;
-            crystalCounterDisplay.ShowResource($"{resourceName}:"); 
-            vespeneCounterDisplay.ShowResource($"{resourceName}:"); 
+            crystalCounterDisplay.ShowResource($"{resourceName}:");
+            vespeneCounterDisplay.ShowResource($"{resourceName}:");
         }
     }
 
